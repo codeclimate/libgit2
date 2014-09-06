@@ -44,6 +44,9 @@ typedef enum {
 	 * it will ask via this credential type.
 	 */
 	GIT_CREDTYPE_USERNAME = (1u << 5),
+
+	/* git_cred_ssh_memory */
+	GIT_CREDTYPE_SSH_MEMORY = (1u << 6),
 } git_credtype_t;
 
 /* The base structure for all credential types */
@@ -156,6 +159,21 @@ GIT_EXTERN(int) git_cred_ssh_key_new(
 	const char *publickey,
 	const char *privatekey,
 	const char *passphrase);
+
+GIT_EXTERN(int) git_cred_ssh_key_memory_new(
+	git_cred **out,
+	const char *username,
+	const char *publickey,
+	const char *privatekey,
+	const char *passphrase);
+
+GIT_EXTERN(int) git_cred_ssh_key_type_new(
+	git_cred **out,
+	const char *username,
+	const char *publickey,
+	const char *privatekey,
+	const char *passphrase,
+	git_credtype_t credtype);
 
 /**
  * Create a new ssh keyboard-interactive based credential object.

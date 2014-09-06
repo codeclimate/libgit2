@@ -323,6 +323,14 @@ static int _git_ssh_authenticate_session(
 
 			break;
 		}
+		case GIT_CREDTYPE_SSH_MEMORY: {
+			git_cred_ssh_key *c = (git_cred_ssh_key *)cred;
+
+				rc = libssh2_userauth_publickey_frommemory(
+					session, c->username, c->publickey,
+					c->privatekey, c->passphrase);
+			break;
+    }
 		case GIT_CREDTYPE_SSH_CUSTOM: {
 			git_cred_ssh_custom *c = (git_cred_ssh_custom *)cred;
 
@@ -690,6 +698,7 @@ static int list_auth_methods(int *out, LIBSSH2_SESSION *session, const char *use
 		if (!git__prefixcmp(ptr, SSH_AUTH_PUBLICKEY)) {
 			*out |= GIT_CREDTYPE_SSH_KEY;
 			*out |= GIT_CREDTYPE_SSH_CUSTOM;
+			*out |= GIT_CREDTYPE_SSH_MEMORY;
 			ptr += strlen(SSH_AUTH_PUBLICKEY);
 			continue;
 		}
