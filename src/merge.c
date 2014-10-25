@@ -22,7 +22,6 @@
 #include "tree.h"
 #include "merge_file.h"
 #include "blob.h"
-#include "hashsig.h"
 #include "oid.h"
 #include "index.h"
 #include "filebuf.h"
@@ -42,6 +41,7 @@
 #include "git2/tree.h"
 #include "git2/oidarray.h"
 #include "git2/sys/index.h"
+#include "git2/sys/hashsig.h"
 
 #define GIT_MERGE_INDEX_ENTRY_EXISTS(X)	((X).mode != 0)
 #define GIT_MERGE_INDEX_ENTRY_ISFILE(X) S_ISREG((X).mode)
@@ -62,16 +62,14 @@ struct merge_diff_df_data {
 
 /* Merge base computation */
 
-int git_merge_base_many(git_oid *out, git_repository *repo, size_t length, const git_oid input_array[])
+int merge_bases_many(git_commit_list **out, git_revwalk **walk_out, git_repository *repo, size_t length, const git_oid input_array[])
 {
-	git_revwalk *walk;
+	git_revwalk *walk = NULL;
 	git_vector list;
 	git_commit_list *result = NULL;
+	git_commit_list_node *commit;
 	int error = -1;
 	unsigned int i;
-	git_commit_list_node *commit;
-
-	assert(out && repo && input_array);
 
 	if (length < 2) {
 		giterr_set(GITERR_INVALID, "At least two commits are required to find an ancestor. Provided 'length' was %u.", length);
@@ -82,37 +80,92 @@ int git_merge_base_many(git_oid *out, git_repository *repo, size_t length, const
 		return -1;
 
 	if (git_revwalk_new(&walk, repo) < 0)
-		goto cleanup;
+		goto on_error;
 
 	for (i = 1; i < length; i++) {
 		commit = git_revwalk__commit_lookup(walk, &input_array[i]);
 		if (commit == NULL)
-			goto cleanup;
+			goto on_error;
 
 		git_vector_insert(&list, commit);
 	}
 
 	commit = git_revwalk__commit_lookup(walk, &input_array[0]);
 	if (commit == NULL)
-		goto cleanup;
+		goto on_error;
 
 	if (git_merge__bases_many(&result, walk, commit, &list) < 0)
-		goto cleanup;
+		goto on_error;
 
 	if (!result) {
 		giterr_set(GITERR_MERGE, "No merge base found");
 		error = GIT_ENOTFOUND;
-		goto cleanup;
+		goto on_error;
 	}
+
+	*out = result;
+	*walk_out = walk;
+
+	git_vector_free(&list);
+	return 0;
+
+on_error:
+	git_vector_free(&list);
+	git_revwalk_free(walk);
+	return error;
+}
+
+int git_merge_base_many(git_oid *out, git_repository *repo, size_t length, const git_oid input_array[])
+{
+	git_revwalk *walk;
+	git_commit_list *result = NULL;
+	int error = 0;
+
+	assert(out && repo && input_array);
+
+	if ((error = merge_bases_many(&result, &walk, repo, length, input_array)) < 0)
+		return error;
 
 	git_oid_cpy(out, &result->item->oid);
 
-	error = 0;
+	git_commit_list_free(&result);
+	git_revwalk_free(walk);
+
+	return 0;
+}
+
+int git_merge_bases_many(git_oidarray *out, git_repository *repo, size_t length, const git_oid input_array[])
+{
+	git_revwalk *walk;
+	git_commit_list *list, *result = NULL;
+	int error = 0;
+	git_array_oid_t array;
+
+	assert(out && repo && input_array);
+
+	if ((error = merge_bases_many(&result, &walk, repo, length, input_array)) < 0)
+		return error;
+
+	git_array_init(array);
+
+	list = result;
+	while (list) {
+		git_oid *id = git_array_alloc(array);
+		if (id == NULL) {
+			error = -1;
+			goto cleanup;
+		}
+
+		git_oid_cpy(id, &list->item->oid);
+		list = list->next;
+	}
+
+	git_oidarray__from_array(out, &array);
 
 cleanup:
 	git_commit_list_free(&result);
 	git_revwalk_free(walk);
-	git_vector_free(&list);
+
 	return error;
 }
 
@@ -2338,7 +2391,6 @@ done:
 
 static int merge_check_workdir(size_t *conflicts, git_repository *repo, git_index *index_new, git_vector *merged_paths)
 {
-	git_index *index_repo = NULL;
 	git_diff *wd_diff_list = NULL;
 	git_diff_options opts = GIT_DIFF_OPTIONS_INIT;
 	int error = 0;
@@ -2346,6 +2398,16 @@ static int merge_check_workdir(size_t *conflicts, git_repository *repo, git_inde
 	GIT_UNUSED(index_new);
 
 	*conflicts = 0;
+
+	/* We need to have merged at least 1 file for the possibility to exist to
+	 * have conflicts with the workdir. Passing 0 as the pathspec count paramter
+	 * will consider all files in the working directory, that is, we may detect
+	 * a conflict if there were untracked files in the workdir prior to starting
+	 * the merge. This typically happens when cherry-picking a commmit whose
+	 * changes have already been applied.
+	 */
+	if (merged_paths->length == 0)
+		return 0;
 
 	opts.flags |= GIT_DIFF_INCLUDE_UNTRACKED;
 
@@ -2356,13 +2418,12 @@ static int merge_check_workdir(size_t *conflicts, git_repository *repo, git_inde
 	opts.pathspec.count = merged_paths->length;
 	opts.pathspec.strings = (char **)merged_paths->contents;
 
-	if ((error = git_diff_index_to_workdir(&wd_diff_list, repo, index_repo, &opts)) < 0)
+	if ((error = git_diff_index_to_workdir(&wd_diff_list, repo, NULL, &opts)) < 0)
 		goto done;
 
 	*conflicts = wd_diff_list->deltas.length;
 
 done:
-	git_index_free(index_repo);
 	git_diff_free(wd_diff_list);
 
 	return error;

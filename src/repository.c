@@ -1567,8 +1567,10 @@ int git_repository_head_unborn(git_repository *repo)
 	error = git_repository_head(&ref, repo);
 	git_reference_free(ref);
 
-	if (error == GIT_EUNBORNBRANCH)
+	if (error == GIT_EUNBORNBRANCH) {
+		giterr_clear();
 		return 1;
+	}
 
 	if (error < 0)
 		return -1;
@@ -1679,6 +1681,32 @@ int git_repository_is_bare(git_repository *repo)
 {
 	assert(repo);
 	return repo->is_bare;
+}
+
+int git_repository_set_bare(git_repository *repo)
+{
+	int error;
+	git_config *config;
+
+	assert(repo);
+
+	if (repo->is_bare)
+		return 0;
+
+	if ((error = git_repository_config__weakptr(&config, repo)) < 0)
+		return error;
+
+	if ((error = git_config_set_bool(config, "core.bare", false)) < 0)
+		return error;
+
+	if ((error = git_config__update_entry(config, "core.worktree", NULL, true, true)) < 0)
+		return error;
+
+	git__free(repo->workdir);
+	repo->workdir = NULL;
+	repo->is_bare = 1;
+
+	return 0;
 }
 
 int git_repository_head_tree(git_tree **tree, git_repository *repo)

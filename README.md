@@ -55,7 +55,7 @@ dependencies, it can make use of a few libraries to add to it:
 
 - pthreads (non-Windows) to enable threadsafe access as well as multi-threaded pack generation
 - OpenSSL (non-Windows) to talk over HTTPS and provide the SHA-1 functions
-- LibSSH2 to enable the ssh transport
+- LibSSH2 to enable the SSH transport
 - iconv (OSX) to handle the HFS+ path encoding peculiarities
 
 Building libgit2 - Using CMake
@@ -119,8 +119,7 @@ You need to run the CMake commands from the Visual Studio command
 prompt, not the regular or Windows SDK one. Select the right generator
 for your version with the `-G "Visual Studio X" option.
 
-See [the wiki]
-(https://github.com/libgit2/libgit2/wiki/Building-libgit2-on-Windows)
+See [the website](https://libgit2.github.com/docs/guides/build-and-link)
 for more detailed instructions.
 
 Android
@@ -195,6 +194,8 @@ Here are the bindings to libgit2 that are currently available:
     * git2r <https://github.com/ropensci/git2r>
 * Ruby
     * Rugged <https://github.com/libgit2/rugged>
+* Rust
+    * git2-rs <https://github.com/alexcrichton/git2-rs>
 * Vala
     * libgit2.vapi <https://github.com/apmasell/vapis/blob/master/libgit2.vapi>
 
@@ -211,7 +212,7 @@ workflow, the libgit2 [coding conventions](CONVENTIONS.md), and out list of
 License
 ==================================
 
-`libgit2` is under GPL2 **with linking exemption**. This means you can link to
+`libgit2` is under GPL2 **with linking exception**. This means you can link to
 and use the library from any program, proprietary or open source; paid or
 gratis.  However, you cannot modify libgit2 and distribute it without
 supplying the source.
