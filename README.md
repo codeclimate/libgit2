@@ -1,7 +1,8 @@
 libgit2 - the Git linkable library
 ==================================
 
-[![Build Status](https://secure.travis-ci.org/libgit2/libgit2.png?branch=development)](http://travis-ci.org/libgit2/libgit2)
+[![Travis Build Status](https://secure.travis-ci.org/libgit2/libgit2.png?branch=master)](http://travis-ci.org/libgit2/libgit2)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/gnjsdi9r48cfoveg/branch/master?svg=true)](https://ci.appveyor.com/project/nulltoken/libgit2/branch/master)
 [![Coverity Scan Build Status](https://scan.coverity.com/projects/639/badge.svg)](https://scan.coverity.com/projects/639)
 
 `libgit2` is a portable, pure C implementation of the Git core methods
@@ -58,6 +59,11 @@ dependencies, it can make use of a few libraries to add to it:
 - LibSSH2 to enable the SSH transport
 - iconv (OSX) to handle the HFS+ path encoding peculiarities
 
+Threading
+=========
+
+See [THREADING](THREADING.md) for information
+
 Building libgit2 - Using CMake
 ==============================
 
@@ -90,7 +96,7 @@ The following CMake variables are declared:
 - `INCLUDE_INSTALL_DIR`: Where to install headers to.
 - `BUILD_SHARED_LIBS`: Build libgit2 as a Shared Library (defaults to ON)
 - `BUILD_CLAR`: Build [Clar](https://github.com/vmg/clar)-based test suite (defaults to ON)
-- `THREADSAFE`: Build libgit2 with threading support (defaults to OFF)
+- `THREADSAFE`: Build libgit2 with threading support (defaults to ON)
 - `STDCALL`: Build libgit2 as `stdcall`. Turn off for `cdecl` (Windows; defaults to ON)
 
 Compiler and linker options
@@ -132,11 +138,11 @@ with full path to the toolchain):
 
 	SET(CMAKE_SYSTEM_NAME Linux)
 	SET(CMAKE_SYSTEM_VERSION Android)
-	
+
 	SET(CMAKE_C_COMPILER   {PATH}/bin/arm-linux-androideabi-gcc)
 	SET(CMAKE_CXX_COMPILER {PATH}/bin/arm-linux-androideabi-g++)
 	SET(CMAKE_FIND_ROOT_PATH {PATH}/sysroot/)
-	
+
 	SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 	SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)

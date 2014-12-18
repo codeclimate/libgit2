@@ -59,6 +59,10 @@ static void check_error(int error_code, const char *action)
 
 int main (int argc, char** argv)
 {
+  // Initialize the library, this will set up any global state which libgit2 needs
+  // including threading and crypto
+  git_libgit2_init();
+
   // ### Opening the Repository
 
   // There are a couple of methods for opening a repository, this being the
@@ -122,7 +126,7 @@ int main (int argc, char** argv)
 
   // We can read raw objects directly from the object database if we have
   // the oid (SHA) of the object.  This allows us to access objects without
-  // knowing thier type and inspect the raw bytes unparsed.
+  // knowing their type and inspect the raw bytes unparsed.
   error = git_odb_read(&obj, odb, &oid);
   check_error(error, "finding object in repository");
 
@@ -398,7 +402,7 @@ int main (int argc, char** argv)
 
   // Now that we have the starting point pushed onto the walker, we start
   // asking for ancestors. It will return them in the sorting order we asked
-  // for as commit oids.  We can then lookup and parse the commited pointed
+  // for as commit oids.  We can then lookup and parse the committed pointed
   // at by the returned OID; note that this operation is specially fast
   // since the raw contents of the commit object will be cached in memory
   while ((git_revwalk_next(&oid, walk)) == 0) {

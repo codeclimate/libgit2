@@ -83,6 +83,22 @@ void test_config_include__depth(void)
 
 	cl_git_fail(git_config_open_ondisk(&cfg, "a"));
 
-	unlink("a");
-	unlink("b");
+	p_unlink("a");
+	p_unlink("b");
+}
+
+void test_config_include__missing(void)
+{
+	git_config *cfg;
+	const char *str;
+
+	cl_git_mkfile("including", "[include]\npath = nonexistentfile\n[foo]\nbar = baz");
+
+	giterr_clear();
+	cl_git_pass(git_config_open_ondisk(&cfg, "including"));
+	cl_assert(giterr_last() == NULL);
+	cl_git_pass(git_config_get_string(&str, cfg, "foo.bar"));
+	cl_assert_equal_s(str, "baz");
+
+	git_config_free(cfg);
 }

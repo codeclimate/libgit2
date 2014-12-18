@@ -18,7 +18,7 @@ void cl_git_mkfile(const char *filename, const char *content)
 	int fd;
 
 	fd = p_creat(filename, 0666);
-	cl_assert(fd != 0);
+	cl_assert(fd != -1);
 
 	if (content) {
 		cl_must_pass(p_write(fd, content, strlen(content)));
@@ -80,7 +80,7 @@ char *cl_getenv(const char *name)
 
 int cl_setenv(const char *name, const char *value)
 {
-	wchar_t *wide_name, *wide_value;
+	wchar_t *wide_name, *wide_value = NULL;
 
 	cl_assert(git__utf8_to_16_alloc(&wide_name, name) >= 0);
 
@@ -95,6 +95,8 @@ int cl_setenv(const char *name, const char *value)
 		SetEnvironmentVariableW(wide_name, NULL);
 	}
 
+	git__free(wide_name);
+	git__free(wide_value);
 	return 0;
 }
 
