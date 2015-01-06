@@ -1,4 +1,7 @@
-v0.21 + 1
+v0.22 + 1
+------
+
+v0.22
 ------
 
 * File unlocks are atomic again via rename. Read-only files on Windows are
@@ -33,6 +36,11 @@ v0.21 + 1
   tells it to include a copy of libssh2 at the given location. This is
   enabled for MSVC.
 
+* libgit2 no longer automatically sets the OpenSSL locking
+  functions. This is not something which we can know to do. A
+  last-resort convenience function is provided in sys/openssl.h,
+  git_openssl_set_locking() which can be used to set the locking.
+
 * The git_transport_register function no longer takes a priority and takes
   a URL scheme name (eg "http") instead of a prefix like "http://"
 
@@ -51,8 +59,8 @@ v0.21 + 1
 * git_remote_delete() now accepts the repository and the remote's name
   instead of a loaded remote.
 
-* git_remote_supported_url() has been removed as it has become
-  essentially useless with rsync-style ssh paths.
+* git_remote_supported_url() and git_remote_is_valid_url() have been
+  removed as they have become essentially useless with rsync-style ssh paths.
 
 * The git_clone_options struct no longer provides the ignore_cert_errors or
   remote_name members for remote customization.
@@ -88,8 +96,11 @@ v0.21 + 1
 * Rename git_remote_load() to git_remote_lookup() to bring it in line
   with the rest of the lookup functions.
 
-* git_push_unpack_ok() has been removed and git_push_finish() now
-  returns an error if the unpacking failed.
+* The git_push struct to perform a push has been replaced with
+  git_remote_upload(). The refspecs and options are passed as a
+  function argument. git_push_update_tips() is now also
+  git_remote_update_tips() and the callbacks are in the same struct as
+  the rest.
 
 * Introduce git_merge_bases() and the git_oidarray type to expose all
   merge bases between two commits.
@@ -129,6 +140,11 @@ v0.21 + 1
   has been changed to match git 1.9.0 and later. In this mode, libgit2 now
   fetches all tags in addition to whatever else needs to be fetched.
 
+* The remote object has learnt to prune remote-tracking branches. If
+  the remote is configured to do so, this will happen via
+  git_remote_fetch(). You can also call git_remote_prune() after
+  connecting or fetching to perform the prune.
+
 * git_threads_init() and git_threads_shutdown() have been renamed to
   git_libgit2_init() and git_libgit2_shutdown() to better explain what
   their purpose is, as it's grown to be more than just about threads.
@@ -137,6 +153,64 @@ v0.21 + 1
   initializations of the library, so consumers may schedule work on the
   first initialization.
 
-* git_treebuilder_create now takes a repository so that it can query
-  repository configuration.  Subsequently, git_treebuilder_write no
-  longer takes a repository.
+* git_treebuilder_new (was git_treebuilder_create) now takes a
+  repository so that it can query repository configuration.
+  Subsequently, git_treebuilder_write no longer takes a repository.
+
+* git_treebuilder_create was renamed to git_treebuilder_new to better
+  reflect it being a constructor rather than something which writes to
+  disk.
+
+* git_checkout now handles case-changing renames correctly on
+  case-insensitive filesystems; for example renaming "readme" to "README".
+
+* git_index_name_entrycount() and git_index_reuc_entrycount() now
+  return size_t instead of unsigned int.
+
+* The search for libssh2 is now done via pkg-config instead of a
+  custom search of a few directories.
+
+* Add support for core.protectHFS and core.protectNTFS. Add more
+  validation for filenames which we write such as references.
+
+* The local transport now generates textual progress output like
+  git-upload-pack does ("counting objects").
+
+* The git_submodule_update function was renamed to
+  git_submodule_update_strategy. git_submodule_update is now used to
+  provide functionalty similar to "git submodule update".
+
+* git_checkout_index() can now check out an in-memory index that is not
+  necessarily the repository's index, so you may check out an index
+  that was produced by git_merge and friends while retaining the cached
+  information.
+
+* git_cherry_pick() is now git_cherrypick().
+
+* Introduce git_buf_text_is_binary() and git_buf_text_contains_nul() for
+  consumers to perform binary detection on a git_buf.
+
+* Remove the default timeout for receiving / sending data over HTTP using
+  the WinHTTP transport layer.
+
+* Add SPNEGO (Kerberos) authentication using GSSAPI on Unix systems.
+
+* git_signature_new() now requires a non-empty email address.
+
+* Use CommonCrypto libraries for SHA-1 calculation on Mac OS X.
+
+* Disable SSL compression and SSLv2 and SSLv3 ciphers in favor of TLSv1
+  in OpenSSL.
+
+* git_branch_upstream_remote() has been introduced to provide the
+  branch.<name>.remote configuration value.
+
+* The GIT_EPEEL error code has been introduced when we cannot peel a tag
+  to the requested object type; if the given object otherwise cannot be
+  peeled, GIT_EINVALIDSPEC is returned.
+
+* Provide built-in objects for the empty blob (e69de29) and empty
+  tree (4b825dc) objects.
+
+* Introduce GIT_REPOSITORY_INIT_RELATIVE_GITLINK to use relative paths
+  when writing gitlinks, as is used by git core for submodules.
